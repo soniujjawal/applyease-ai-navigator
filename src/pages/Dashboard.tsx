@@ -254,9 +254,12 @@ const Dashboard = () => {
             <AreaChart
               className="h-[200px]"
               data={applicationData}
-              categories={["applications", "interviews", "offers"]}
-              colors={["blue", "violet", "green"]}
-              xAxis={[{ dataKey: "name" }]}
+              series={[
+                { dataKey: "applications", label: "Applications", color: "blue" },
+                { dataKey: "interviews", label: "Interviews", color: "violet" },
+                { dataKey: "offers", label: "Offers", color: "green" }
+              ]}
+              index="name"
             />
           </CardContent>
         </Card>
@@ -268,9 +271,10 @@ const Dashboard = () => {
             <BarChart
               className="h-[200px]"
               data={applicationStatusData}
-              categories={["value"]}
-              colors={["blue"]}
-              xAxis={[{ dataKey: "name" }]}
+              index="name"
+              series={[
+                { dataKey: "value", label: "Jobs", color: "blue" }
+              ]}
               valueFormatter={(value) => `${value} jobs`}
             />
           </CardContent>

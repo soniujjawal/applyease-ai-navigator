@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/components/auth/auth-service";
+import { AuthProvider, useAuth } from "@/components/auth/auth-service";
 
 // Pages
 import Index from "./pages/Index";
@@ -21,8 +21,56 @@ import NotFound from "./pages/NotFound";
 
 // Layout
 import { DashboardLayout } from "./components/layout/dashboard-layout";
+import { useEffect } from "react";
+
+// Protected route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
 
 const queryClient = new QueryClient();
+
+const AppRoutes = () => {
+  const { user, loading } = useAuth();
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/login" element={
+        user ? <Navigate to="/dashboard" replace /> : <Login />
+      } />
+      <Route path="/signup" element={
+        user ? <Navigate to="/dashboard" replace /> : <Signup />
+      } />
+      
+      {/* Dashboard routes with DashboardLayout and protection */}
+      <Route element={
+        <ProtectedRoute>
+          <DashboardLayout />
+        </ProtectedRoute>
+      }>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/resume" element={<Resume />} />
+        <Route path="/applications" element={<Applications />} />
+        <Route path="/jobs" element={<Jobs />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+      
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -32,23 +80,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              
-              {/* Dashboard routes with DashboardLayout */}
-              <Route element={<DashboardLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/resume" element={<Resume />} />
-                <Route path="/applications" element={<Applications />} />
-                <Route path="/jobs" element={<Jobs />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AppRoutes />
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>

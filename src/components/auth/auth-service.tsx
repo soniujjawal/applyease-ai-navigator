@@ -1,20 +1,20 @@
 
 import { useEffect, useState, createContext, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User, AuthError } from '@supabase/supabase-js';
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   signIn: (email: string, password: string) => Promise<{
-    error: Error | null;
-    data: Session | null;
+    error: AuthError | null;
+    data: { session: Session | null };
   }>;
   signUp: (email: string, password: string) => Promise<{
-    error: Error | null;
+    error: AuthError | null;
     data: { user: User | null; session: Session | null };
   }>;
-  signOut: () => Promise<{ error: Error | null }>;
+  signOut: () => Promise<{ error: AuthError | null }>;
   loading: boolean;
 }
 
