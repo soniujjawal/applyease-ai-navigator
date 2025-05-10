@@ -6,8 +6,7 @@ import { Session, User, AuthError, AuthTokenResponse } from '@supabase/supabase-
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  signIn: (email: string, password: string) => Promise<AuthTokenResponse>;
-  signUp: (email: string, password: string) => Promise<AuthTokenResponse>;
+  signInWithGithub: () => Promise<AuthTokenResponse>;
   signOut: () => Promise<{ error: AuthError | null }>;
   loading: boolean;
 }
@@ -39,10 +38,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const value = {
     session,
     user,
-    signIn: (email: string, password: string) => 
-      supabase.auth.signInWithPassword({ email, password }),
-    signUp: (email: string, password: string) => 
-      supabase.auth.signUp({ email, password }),
+    signInWithGithub: () => 
+      supabase.auth.signInWithOAuth({ 
+        provider: 'github',
+        options: {
+          redirectTo: window.location.origin + '/dashboard'
+        }
+      }),
     signOut: () => supabase.auth.signOut(),
     loading,
   };

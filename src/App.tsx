@@ -21,14 +21,17 @@ import NotFound from "./pages/NotFound";
 
 // Layout
 import { DashboardLayout } from "./components/layout/dashboard-layout";
-import { useEffect } from "react";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
   
   if (!user) {
