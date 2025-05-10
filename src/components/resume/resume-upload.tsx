@@ -1,14 +1,76 @@
 
 import { useState } from "react";
+import { TextItem } from 'pdfjs-dist/types/src/display/api';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Upload } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import * as pdfjsLib from 'pdfjs-dist';
+import 'pdfjs-dist/web/pdf_viewer.css';
+
+// Initialize PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface FileUploadProps {
   onUploadComplete: (data: any) => void;
 }
+
+const extractName = (text: string): string => {
+  const nameRegex = /[A-Z][a-z]+\s+[A-Z][a-z]+/;
+  const match = text.match(nameRegex);
+  return match ? match[0] : 'Name not found';
+};
+
+const extractEmail = (text: string): string => {
+  const emailRegex = /[\w.-]+@[\w.-]+\.\w+/;
+  const match = text.match(emailRegex);
+  return match ? match[0] : 'Email not found';
+};
+
+const extractPhone = (text: string): string => {
+  const phoneRegex = /\+?\d[\d\s-]{8,}\d/;
+  const match = text.match(phoneRegex);
+  return match ? match[0] : 'Phone not found';
+};
+
+const extractSkills = (text: string): string[] => {
+  const skillKeywords = ['javascript', 'react', 'typescript', 'node.js', 'html', 'css', 'python', 'java', 'c#', 'sql'];
+  const skills = skillKeywords
+    .map(skill => text.toLowerCase().includes(skill) ? skill : null)
+    .filter((skill): skill is string => skill !== null);
+  return skills;
+};
+
+const extractExperiences = (text: string): any[] => {
+  const experienceRegex = /(?<title>[\w\s]+)\s+at\s+(?<company>[\w\s]+)\s+(?<period>[\w\s]+\d{4}\s+-\s+[\w\s]+\d{4})/g;
+  const experiences: any[] = [];
+  let match;
+  while ((match = experienceRegex.exec(text)) !== null) {
+    experiences.push({
+      title: match.groups?.title || 'Title not found',
+      company: match.groups?.company || 'Company not found',
+      period: match.groups?.period || 'Period not found',
+      description: 'Description not found'
+    });
+  }
+  return experiences;
+};
+
+const extractEducation = (text: string): any[] => {
+  const educationRegex = /(?<degree>[\w\s]+)\s+from\s+(?<institution>[\w\s]+)\s+(?<year>\d{4})/g;
+  const education: any[] = [];
+  let match;
+  while ((match = educationRegex.exec(text)) !== null) {
+    education.push({
+      degree: match.groups?.degree || 'Degree not found',
+      institution: match.groups?.institution || 'Institution not found',
+      year: match.groups?.year || 'Year not found'
+    });
+  }
+  return education;
+};
 
 export function ResumeUpload({ onUploadComplete }: FileUploadProps) {
   const [file, setFile] = useState<File | null>(null);
@@ -35,67 +97,89 @@ export function ResumeUpload({ onUploadComplete }: FileUploadProps) {
     setUploading(true);
     setProgress(0);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          return 95;
-        }
-        return prev + 5;
-      });
-    }, 200);
+    // Upload file to Supabase storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `resumes/${fileName}`;
 
-    // Simulate processing time
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    
-    // Simulate file upload
-    const mockData = {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      uploaded: new Date().toISOString(),
-      extractedData: {
-        name: "John Doe",
-        email: "john.doe@example.com",
-        phone: "+1 (123) 456-7890",
-        skills: ["JavaScript", "React", "TypeScript", "Node.js", "HTML", "CSS"],
-        experiences: [
-          {
-            title: "Frontend Developer",
-            company: "Tech Solutions Inc.",
-            period: "Jan 2020 - Present",
-            description: "Developed responsive web applications using React and TypeScript."
-          },
-          {
-            title: "Web Developer",
-            company: "Digital Agency",
-            period: "Mar 2018 - Dec 2019",
-            description: "Created websites and web applications for various clients."
-          }
-        ],
-        education: [
-          {
-            degree: "Bachelor of Science in Computer Science",
-            institution: "University of Technology",
-            year: "2018"
-          }
-        ]
-      }
-    };
+    try {
+      // Upload to Supabase storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('resumes')
+        .upload(filePath, file);
 
-    clearInterval(interval);
-    setProgress(100);
-    
-    setTimeout(() => {
-      setUploading(false);
-      onUploadComplete(mockData);
+      if (uploadError) throw uploadError;
+
+      // Read the file as array buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
       
+      // Extract text from all pages
+      let text = '';
+      for (let i = 0; i < pdf.numPages; i++) {
+        const page = await pdf.getPage(i + 1);
+        const content = await page.getTextContent();
+        text += content.items
+          .filter((item): item is TextItem => 'str' in item)
+          .map(item => item.str)
+          .join(' ');
+      }
+
+      // Extract basic information from text
+      const parsedData = {
+        name: extractName(text),
+        email: extractEmail(text),
+        phone: extractPhone(text),
+        skills: extractSkills(text),
+        experiences: extractExperiences(text),
+        education: extractEducation(text)
+      };
+
+      // Store parsed data in Supabase
+      const { data: insertData, error: insertError } = await supabase
+        .from('resumes')
+        .insert([
+          {
+            file_name: file.name,
+            file_path: filePath,
+            parsed_data: parsedData,
+            uploaded_at: new Date().toISOString(),
+            user_id: (await supabase.auth.getUser()).data?.user?.id
+          }
+        ])
+        .select();
+
+      if (insertError) throw insertError;
+
+      // Update progress
+      setProgress(100);
+      setUploading(false);
+
+      // Pass real parsed data to preview
+      onUploadComplete({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        uploaded: new Date().toISOString(),
+        extractedData: parsedData
+      });
+
       toast({
         title: "Resume uploaded!",
-        description: "Your resume has been successfully analyzed.",
+        description: "Your resume has been successfully analyzed and stored.",
       });
-    }, 400);
+    } catch (error) {
+      console.error('Error uploading resume:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to upload and process your resume. Please try again.",
+      });
+    } finally {
+      setProgress(100);
+      setUploading(false);
+    }
   };
 
   return (
