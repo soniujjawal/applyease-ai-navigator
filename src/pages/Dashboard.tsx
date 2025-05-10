@@ -8,10 +8,13 @@ import { Application } from "@/components/applications/application-card";
 import { Job } from "@/components/jobs/job-card";
 import { FileText, Briefcase, Search, ArrowRight } from "lucide-react";
 import { 
-  AreaChart, 
-  BarChart,
-  LineChart 
-} from "recharts";
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent
+} from "@/components/ui/chart";
+import { AreaChart, BarChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -251,16 +254,21 @@ const Dashboard = () => {
             <CardTitle>Application Activity</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <AreaChart
-              className="h-[200px]"
-              data={applicationData}
-              series={[
-                { dataKey: "applications", label: "Applications", color: "blue" },
-                { dataKey: "interviews", label: "Interviews", color: "violet" },
-                { dataKey: "offers", label: "Offers", color: "green" }
-              ]}
-              index="name"
-            />
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart
+                data={applicationData}
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="applications" name="Applications" stackId="1" stroke="#8884d8" fill="#8884d8" />
+                <Area type="monotone" dataKey="interviews" name="Interviews" stackId="2" stroke="#82ca9d" fill="#82ca9d" />
+                <Area type="monotone" dataKey="offers" name="Offers" stackId="3" stroke="#ffc658" fill="#ffc658" />
+              </AreaChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
         <Card className="col-span-3">
@@ -268,15 +276,19 @@ const Dashboard = () => {
             <CardTitle>Application Status</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <BarChart
-              className="h-[200px]"
-              data={applicationStatusData}
-              index="name"
-              series={[
-                { dataKey: "value", label: "Jobs", color: "blue" }
-              ]}
-              valueFormatter={(value) => `${value} jobs`}
-            />
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart
+                data={applicationStatusData}
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value) => `${value} jobs`} />
+                <Legend />
+                <Bar dataKey="value" name="Jobs" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
