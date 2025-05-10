@@ -6,8 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Application } from "@/components/applications/application-card";
 import { Job } from "@/components/jobs/job-card";
-import { AreaChart, BarChart, LineChart } from "recharts";
 import { FileText, Briefcase, Search, ArrowRight } from "lucide-react";
+import { 
+  AreaChart, 
+  BarChart,
+  LineChart 
+} from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 // Demo data
 const applicationData = [
@@ -104,21 +110,61 @@ const recommendedJobs: Job[] = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [totalApplications, setTotalApplications] = useState(0);
   const [activeInterviews, setActiveInterviews] = useState(0);
   const [matchingJobs, setMatchingJobs] = useState(0);
   const [hasResume, setHasResume] = useState(false);
 
   useEffect(() => {
-    // Simulate loading data
-    setTotalApplications(36);
-    setActiveInterviews(4);
-    setMatchingJobs(24);
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+      
+      // Check if user has a resume
+      try {
+        const { data: resumes, error } = await supabase
+          .from('resumes')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .limit(1);
+          
+        if (error) throw error;
+        setHasResume(resumes && resumes.length > 0);
+        
+        // Get application stats
+        const { data: applications, error: appError } = await supabase
+          .from('applications')
+          .select('*')
+          .eq('user_id', session.user.id);
+          
+        if (appError) throw appError;
+        
+        setTotalApplications(applications?.length || 0);
+        setActiveInterviews(applications?.filter(app => app.status === 'interview')?.length || 0);
+        
+        // Get job count
+        const { count, error: jobError } = await supabase
+          .from('jobs')
+          .select('*', { count: 'exact', head: true });
+          
+        if (jobError) throw jobError;
+        setMatchingJobs(count || 0);
+        
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Fall back to demo data
+        setTotalApplications(36);
+        setActiveInterviews(4);
+        setMatchingJobs(24);
+      }
+    };
     
-    // Check if user has uploaded a resume
-    const resumeData = localStorage.getItem("resumeData");
-    setHasResume(!!resumeData);
-  }, []);
+    checkAuth();
+  }, [navigate]);
 
   const handleApplyToJob = async (jobId: string) => {
     // Simulate API call
@@ -208,9 +254,9 @@ const Dashboard = () => {
             <AreaChart
               className="h-[200px]"
               data={applicationData}
-              index="name"
               categories={["applications", "interviews", "offers"]}
               colors={["blue", "violet", "green"]}
+              xAxis={[{ dataKey: "name" }]}
             />
           </CardContent>
         </Card>
@@ -222,9 +268,9 @@ const Dashboard = () => {
             <BarChart
               className="h-[200px]"
               data={applicationStatusData}
-              index="name"
               categories={["value"]}
               colors={["blue"]}
+              xAxis={[{ dataKey: "name" }]}
               valueFormatter={(value) => `${value} jobs`}
             />
           </CardContent>

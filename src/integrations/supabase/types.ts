@@ -9,7 +9,159 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          applied_date: string
+          company: string
+          feedback: string | null
+          id: string
+          job_description: string | null
+          job_title: string
+          location: string | null
+          match_score: number | null
+          source: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_date?: string
+          company: string
+          feedback?: string | null
+          id?: string
+          job_description?: string | null
+          job_title: string
+          location?: string | null
+          match_score?: number | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_date?: string
+          company?: string
+          feedback?: string | null
+          id?: string
+          job_description?: string | null
+          job_title?: string
+          location?: string | null
+          match_score?: number | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          company: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          location: string | null
+          posted_at: string
+          salary: string | null
+          skills: string[] | null
+          source: string | null
+          source_id: string | null
+          title: string
+          type: string | null
+          url: string | null
+        }
+        Insert: {
+          company: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          location?: string | null
+          posted_at?: string
+          salary?: string | null
+          skills?: string[] | null
+          source?: string | null
+          source_id?: string | null
+          title: string
+          type?: string | null
+          url?: string | null
+        }
+        Update: {
+          company?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          location?: string | null
+          posted_at?: string
+          salary?: string | null
+          skills?: string[] | null
+          source?: string | null
+          source_id?: string | null
+          title?: string
+          type?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          summary: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      resumes: {
+        Row: {
+          file_name: string
+          file_path: string
+          id: string
+          parsed_data: Json | null
+          updated_at: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          id?: string
+          parsed_data?: Json | null
+          updated_at?: string
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          id?: string
+          parsed_data?: Json | null
+          updated_at?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
